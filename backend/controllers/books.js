@@ -1,19 +1,41 @@
 const Book = require('../models/Book.js');
 const fs = require('fs');
 
-exports.createBook = (req, res, next) => { //permet d'ajouter un livre avec les paramètres du schema 'Book' 
-   const bookObject = JSON.parse(req.body.book);
-   delete bookObject._id;
-   delete bookObject._userId;
-   const book= new Book({
-    ...bookObject,
-    userId : req.auth.userId,
-    imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-   });
-   book.save()
-   .then(()=> {res.status(210).json({message : 'Livre enregistrée !'})})
-   .catch(error => res.status(400).json({error}));
-};
+exports.createBook = (req, res, next) => {
+    const bookObject = JSON.parse(req.body.book);
+    delete bookObject._id;
+    delete bookObject._userId;
+  
+    // Ajouter une validation pour vérifier que les notes sont bien entre 0 et 5
+    const ratings = bookObject.ratings || [];
+    let totalRating = 0;
+    let validRatings = true;
+  
+    ratings.forEach(rating => {
+      if (rating.grade < 0 || rating.grade > 5) {
+        validRatings = false;
+      }
+      totalRating += rating.grade;
+    });
+  
+    if (!validRatings) {
+      return res.status(400).json({ error: 'Les notes doivent être comprises entre 0 et 5.' });
+    }
+  
+    const averageRating = ratings.length > 0 ? totalRating / ratings.length : 0;
+  
+    const book = new Book({
+      ...bookObject,
+      userId: req.auth.userId,
+      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
+      ratings: ratings,  // Initialiser les notes
+      averageRating: averageRating  // Calculer la moyenne
+    });
+  
+    book.save()
+      .then(() => res.status(201).json({ message: 'Livre enregistré !' }))
+      .catch(error => res.status(400).json({ error }));
+  };
 
 exports.modifyBook = (req, res, next) =>{
     const bookObject = req.file ?{
