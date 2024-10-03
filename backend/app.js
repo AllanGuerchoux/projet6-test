@@ -1,8 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path')
-const booksRoutes = require('./books/router.js');
-const userRoutes = require('./books/user.js');
+const booksRoutes = require('./routes/book.js');
+const userRoutes = require('./routes/user.js');
 mongoose.connect('mongodb+srv://allangcx:Simba123@cluster0.cy5fn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
     { useNewUrlParser: true,
       useUnifiedTopology: true })

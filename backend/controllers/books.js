@@ -38,18 +38,22 @@ exports.createBook = (req, res, next) => {
   };
 
 exports.modifyBook = (req, res, next) =>{
+    console.log('test modify')
     const bookObject = req.file ?{
         ...JSON.parse(req.body.book),
         imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
     } : {...req.body};
-
     delete bookObject._userId;
     Book.findOne({_id: req.params.id})
-        .then((book) => {
+    
+        .then(book => {
+            
             if (book.userId != req.auth.userId){
+                
                 res.status(400).json({message :'non-authorisé'})
             } else {
-                Book.updateOne()({_id: req.params.id}, { ...bookObject, _id: req.params.id})
+                
+                Book.updateOne({_id: req.params.id}, { ...bookObject, _id: req.params.id})
                 .then(()=> res.status(200).json({message : 'Livre modifié'}))
                 .catch(error => res.status(400).json({error}));
             }
@@ -58,7 +62,7 @@ exports.modifyBook = (req, res, next) =>{
 };
 
 exports.deleteBook =  (req, res, next) =>{ //supprime le livre et son image avec son id assosié
-    Book.findOne()({_id: req.params.id})
+    Book.findOne({_id: req.params.id})
     .then(book=> {
         if(book.userId != req.auth.userId){
             res.status(401).json({message: 'non-authorisé'});
