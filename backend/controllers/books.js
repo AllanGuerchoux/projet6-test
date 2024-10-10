@@ -3,11 +3,12 @@ const fs = require('fs');
 
 exports.createBook = (req, res, next) => {
     const bookObject = JSON.parse(req.body.book);
-    console.log(bookObject)
+    console.log(bookObject);
+    bookObject.id = 'id' + (new Date()).getTime();
     delete bookObject._id;
     delete bookObject._userId;
   
-    // Ajouter une validation pour vérifier que les notes sont bien entre 0 et 5
+    // Validation des notes
     const ratings = bookObject.ratings || [];
     let totalRating = 0;
     let validRatings = true;
@@ -32,11 +33,25 @@ exports.createBook = (req, res, next) => {
       ratings: ratings,  // Initialiser les notes
       averageRating: averageRating  // Calculer la moyenne
     });
-    console.log(book)
+  
+    console.log(book);
+  
+    // Sauvegarder le livre
     book.save()
-      .then(() => res.status(201).json({ message: 'Livre enregistré !' }))
+
+      .then((savedBook) => {
+        // Copier l'_id sous la propriété id
+        const bookWithId = {
+          ...savedBook._doc, // Utiliser _doc pour accéder aux propriétés MongoDB
+          id: savedBook._id.toString()  // Ajouter l'_id en tant que id
+        };
+        delete bookWithId._id;  // Supprimer la propriété _id si tu ne veux pas la renvoyer
+        res.status(201).json({
+          message: 'Livre enregistré !',
+          book: bookWithId  // Retourne l'objet book avec id
+        });
+      })
       .catch(error => res.status(400).json({ error }));
-      
   };
 
   exports.updateBook = (req, res, next) => {
@@ -110,59 +125,44 @@ exports.getAllBooks = (req, res, next) => { // Renvoie un tableau de tout les li
     .then( books => res.status(200).json(books))
     .catch(error => res.status(400).json({error}));
 };
-exports.addRating = async (req, res) => {
-    const { userId, rating } = req.body;
-
-    if (!userId || rating === undefined) {
-        return res.status(400).json({ message: 'UserId and rating are required' });
-    }
-
-    if (rating < 0 || rating > 5) {
+exports.addRating =  (req, res, next) => {
+    const userId = req.body.userId;
+    const grade = req.body.rating;
+    if (grade < 0 || grade > 5) {
         return res.status(400).json({ message: 'Rating must be between 0 and 5' });
     }
 
-    try {
-        const book = await Book.findById(req.params.id);
+    Book.findOne({_id: req.params.id})
+    .then(book=>{
         if (!book) {
             return res.status(404).json({ message: 'Book not found' });
         }
-
-        // Vérifier si l'utilisateur a déjà noté ce livre
         const existingRating = book.ratings.find(r => r.userId === userId);
         if (existingRating) {
             return res.status(400).json({ message: 'User has already rated this book' });
         }
-
         // Ajouter la nouvelle note
-        book.ratings.push({ userId, grade: rating });
+        book.ratings.push({ userId, grade});
 
         // Recalculer la moyenne
         const totalRating = book.ratings.reduce((sum, r) => sum + r.grade, 0);
-        const averageRating = totalRating / book.ratings.length;
+        book.averageRating = parseFloat((totalRating / book.ratings.length).toFixed(1));
 
-        // Mettre à jour la moyenne dans le livre
-        book.averageRating = averageRating;
+       
 
-        // Enregistrer les modifications
-        const updatedBook = await book.save();
-
-        // Renvoie le livre mis à jour
-        return res.status(200).json({ 
-            message: 'Rating added successfully', 
-            averageRating, 
-            book: updatedBook // Renvoie le livre mis à jour
-        });
-    } catch (error) {
-        console.error('Error adding rating:', error);
-        return res.status(500).json({ message: 'Server error', error });
-    }
+        book.save()
+        .then(updatedBook => res.status(200).json(updatedBook))
+            .catch(error => res.status(400).json({error}));
+    })
+    .catch(error => res.status(500).json({error}));
 };
-  exports.bestrating = async (req, res) => {
-    try {
-        const bestRatedBooks = await Book.find().sort({ averageRating: -1 }).limit(3);
-        // Assure-toi que tu renvoies un tableau
-        res.status(200).json(bestRatedBooks);
-    } catch (error) {
-        res.status(500).json({ error: 'Erreur lors de la récupération des livres' });
-    }
+exports.bestrating = (req, res, next) => {
+    Book.find().sort({ averageRating: -1 }).limit(3)
+        .then(bestRatedBooks => {
+            // Assure-toi que tu renvoies un tableau
+            res.status(200).json(bestRatedBooks);
+        })
+        .catch(error => {
+            res.status(500).json({ error: 'Erreur lors de la récupération des livres' });
+        });
 };

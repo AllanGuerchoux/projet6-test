@@ -6,12 +6,13 @@ const bookCtrl = require('../controllers/books.js');
 
 
 router.post('/',auth , multer ,bookCtrl.createBook);
-router.get('/bestrating', bookCtrl.bestrating);
 router.get('/' ,bookCtrl.getAllBooks);
-router.post('/:id/rating',  bookCtrl.addRating);
+router.get('/bestrating', bookCtrl.bestrating);
+router.get('/:id' ,bookCtrl.getOneBook);
 router.put('/:id',auth, multer ,bookCtrl.updateBook);
 router.delete('/:id',auth ,bookCtrl.deleteBook);
-router.get('/:id' ,bookCtrl.getOneBook);
+
+router.post('/:id/rating',  bookCtrl.addRating);
 
 
 

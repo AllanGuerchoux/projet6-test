@@ -2,8 +2,8 @@ const multer = require('multer');
 
 const MYME_TYPES = {
     'image/jpg': 'jpg',
-    'image/jpeg': 'jpg',  // Correction ici
-    'image/png': 'png',    // Correction ici
+    'image/jpeg': 'jpg',  
+    'image/png': 'png',   
 };
 
 const storage = multer.diskStorage({
@@ -12,7 +12,6 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, callback) => {
         let name = file.originalname.split(' ').join('_');
-        // Retire l'extension existante s'il y en a une
         name = name.replace(/\.[^/.]+$/, "");
         const extension = MYME_TYPES[file.mimetype];
         if (extension) {
@@ -23,4 +22,10 @@ const storage = multer.diskStorage({
     }
 });
 
-module.exports = multer({ storage }).single('image');
+const upload = multer({
+    storage: storage,
+     
+});
+
+// Exportez l'instance de multer
+module.exports = upload.single('image');
