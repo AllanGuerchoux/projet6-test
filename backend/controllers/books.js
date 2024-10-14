@@ -27,31 +27,30 @@ exports.createBook = (req, res, next) => {
     const averageRating = ratings.length > 0 ? totalRating / ratings.length : 0;
   
     const book = new Book({
-      ...bookObject,
-      userId: req.auth.userId,
-      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
-      ratings: ratings,  // Initialiser les notes
-      averageRating: averageRating  // Calculer la moyenne
-    });
+        ...bookObject,
+        userId: req.auth.userId,
+        imageUrl: `${req.protocol}://${req.get('host')}/${req.file.optimizedPath.replace(/\\/g, '/')}`,  // Utiliser le chemin optimisé
+        ratings: ratings,  // Initialiser les notes
+        averageRating: averageRating  // Calculer la moyenne
+      });
   
-    console.log(book);
+      console.log(book);
   
-    // Sauvegarder le livre
-    book.save()
-
-      .then((savedBook) => {
-        // Copier l'_id sous la propriété id
-        const bookWithId = {
-          ...savedBook._doc, // Utiliser _doc pour accéder aux propriétés MongoDB
-          id: savedBook._id.toString()  // Ajouter l'_id en tant que id
-        };
-        delete bookWithId._id;  // Supprimer la propriété _id si tu ne veux pas la renvoyer
-        res.status(201).json({
-          message: 'Livre enregistré !',
-          book: bookWithId  // Retourne l'objet book avec id
-        });
-      })
-      .catch(error => res.status(400).json({ error }));
+      // Sauvegarder le livre
+      book.save()
+        .then((savedBook) => {
+          // Copier l'_id sous la propriété id
+          const bookWithId = {
+            ...savedBook._doc, // Utiliser _doc pour accéder aux propriétés MongoDB
+            id: savedBook._id.toString()  // Ajouter l'_id en tant que id
+          };
+          delete bookWithId._id;  // Supprimer la propriété _id si tu ne veux pas la renvoyer
+          res.status(201).json({
+            message: 'Livre enregistré !',
+            book: bookWithId  // Retourne l'objet book avec id
+          });
+        })
+        .catch(error => res.status(400).json({ error }));
   };
 
   exports.updateBook = (req, res, next) => {
@@ -63,7 +62,7 @@ exports.createBook = (req, res, next) => {
     const bookObject = req.file 
         ? {
             ...JSON.parse(req.body.book),
-            imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+            imageUrl: `${req.protocol}://${req.get('host')}/${req.file.optimizedPath.replace(/\\/g, '/')}`
         } 
         : { ...req.body }; // Utilisation de req.body si pas de fichier
 
