@@ -3,19 +3,13 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 
-const MYME_TYPES = {
-    'image/jpg': 'jpg',
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-};
-
 const storage = multer.memoryStorage(); // Utilisation de memoryStorage pour le buffer temporaire
 
 const upload = multer({
     storage: storage,
     fileFilter: (req, file, callback) => {
-        const extension = MYME_TYPES[file.mimetype];
-        if (extension) {
+        const mimeTypes = ['image/jpg', 'image/jpeg', 'image/png'];
+        if (mimeTypes.includes(file.mimetype)) {
             callback(null, true);
         } else {
             callback(new Error("Type de fichier non supporté"), false);
@@ -23,21 +17,20 @@ const upload = multer({
     }
 }).single('image');
 
-// Middleware pour optimiser l'image après l'upload
+// Middleware pour optimiser l'image après l'upload et convertir en WebP
 const optimizeImage = (req, res, next) => {
     if (!req.file) {
         return next(); // Aucun fichier à optimiser
     }
 
-    const extension = MYME_TYPES[req.file.mimetype];
     const name = req.file.originalname.split(' ').join('_').replace(/\.[^/.]+$/, "");
-    const fileName = `${name}_${Date.now()}.${extension}`;
+    const fileName = `${name}_${Date.now()}.webp`; // Sauvegarder avec l'extension .webp
     const filePath = path.join('images', fileName);
 
     sharp(req.file.buffer)
         .resize({ width: 800 }) // Redimensionner à 800px de large
-        .toFormat(extension, { quality: 80 }) // Qualité de compression
-        .toFile(filePath) // Sauvegarder le fichier optimisé
+        .toFormat('webp', { quality: 80 }) // Conversion en WebP avec qualité de 80
+        .toFile(filePath) // Sauvegarder le fichier optimisé en WebP
         .then(() => {
             // Ajouter le chemin optimisé à la requête
             req.file.optimizedPath = filePath;
