@@ -1,6 +1,6 @@
 const Book = require('../models/Book.js');
 const fs = require('fs');
-
+const auth = require('../middleware/auth.js')
 exports.createBook = (req, res, next) => {
     const bookObject = JSON.parse(req.body.book);
     console.log(bookObject);
@@ -136,7 +136,7 @@ exports.addRating =  (req, res, next) => {
         if (!book) {
             return res.status(404).json({ message: 'Book not found' });
         }
-        const existingRating = book.ratings.find(r => r.userId === userId);
+        const existingRating = book.ratings.find(r => r.userId === req.auth.userId);
         if (existingRating) {
             return res.status(400).json({ message: 'User has already rated this book' });
         }
